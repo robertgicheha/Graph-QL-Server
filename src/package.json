@@ -1,14 +1,14 @@
 {
   "name": "access-afya-graphql",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "apollo-server-express": "^3.13.0",
     "cors": "^2.8.5",
@@ -17,5 +17,7 @@
     "express-graphql": "^0.12.0",
     "graphql": "^15.9.0",
     "mongoose": "^8.5.3"
-  }
+  },
+  "devDependencies": {},
+  "description": ""
 }
