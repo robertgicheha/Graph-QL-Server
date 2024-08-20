@@ -1,105 +1,86 @@
 const express = require('express');
-const { graphqlHTTP } = require('express-graphql');
-const { buildSchema } = require('graphql');
-const cors = require('cors');
+const { ApolloServer, gql } = require('apollo-server-express');
+const mongoose = require('mongoose');
+require('dotenv').config();
+const { testConnection } = require('./config/db');
+const KeyIssue = require('./models/KeyIssue');
+const MonitoringPeriod = require('./models/MonitoringPeriod');
+const Stats = require('./models/Stats');
 
-// Define the GraphQL schema
-const schema = buildSchema(`
-  type Visit {
-    name: String
-    count: Int
+const app = express();
+
+// Define your type definitions (schema)
+const typeDefs = gql`
+  type Query {
+    patientsSeen: Int
+    keyIssues: [KeyIssue]
+    monitoringPeriod: MonitoringPeriod
+    stats: Stats
   }
 
   type KeyIssue {
-    label: String
+    description: String
     count: Int
   }
 
-  type Metrics {
+  type MonitoringPeriod {
+    day: Int
+    week: Int
+    month: Int
+    year: Int
+  }
+
+  type Stats {
     footfall: Int
     patientSatisfaction: Float
     revenue: Float
+    staffMetrics: [StaffMetric]
   }
 
-  type StaffEfficiency {
+  type StaffMetric {
     name: String
-    efficiencyDelta: Float
+    efficiency: Float
     npsDelta: Float
     reportedIssues: Int
   }
+`;
 
-  type Query {
-    visits: [Visit]
-    keyIssues: [KeyIssue]
-    metrics: Metrics
-    staffEfficiency: [StaffEfficiency]
-  }
-`);
-
-// Define the root resolver
-const root = {
-  visits: () => [
-    { name: 'Kariobangi', count: 72 },
-    { name: 'Mukuru Kwa Ruben', count: 56 },
-    { name: 'Mukuru Kwa Njenga', count: 34 },
-    { name: 'Baba Dogo', count: 26 },
-    { name: 'Kisumu', count: 24 },
-    { name: 'Mukuru Kayaba', count: 22 },
-  ],
-  keyIssues: () => [
-    { label: 'Wrong Prescription', count: 1 },
-    { label: 'Opened Late', count: 3 },
-    { label: 'Bad Receipts', count: 2 },
-    { label: 'Late Check In', count: 4 },
-  ],
-  metrics: () => ({
-    footfall: 13000,
-    patientSatisfaction: 7.8,
-    revenue: 4.2,
-  }),
-  staffEfficiency: () => [
-    {
-      name: 'Mercy Mukopa',
-      efficiencyDelta: 1.3,
-      npsDelta: 1.2,
-      reportedIssues: 4,
+// Define your resolvers
+const resolvers = {
+  Query: {
+    patientsSeen: async () => {
+      // Replace with logic to count patients from the database if needed
+      return 286;
     },
-    {
-      name: 'Kennedy Ayako',
-      efficiencyDelta: 1.5,
-      npsDelta: 1.5,
-      reportedIssues: 5,
+    keyIssues: async () => {
+      return await KeyIssue.find({});
     },
-    {
-      name: 'Stephanie Tomatet',
-      efficiencyDelta: 2.7,
-      npsDelta: 2.2,
-      reportedIssues: 3,
+    monitoringPeriod: async () => {
+      return await MonitoringPeriod.findOne({});
     },
-    {
-      name: 'Faith Kyaka',
-      efficiencyDelta: 3.0,
-      npsDelta: 2.5,
-      reportedIssues: 6,
+    stats: async () => {
+      return await Stats.findOne({});
     },
-  ],
+  },
 };
 
-// Create an instance of Express
-const app = express();
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log('Database connected');
+    // Create the Apollo Server
+    const server = new ApolloServer({ typeDefs, resolvers });
 
-// Enable CORS
-app.use(cors());
+    // Apply the Apollo GraphQL middleware and set the path to /graphql
+    server.start().then(() => {
+      server.applyMiddleware({ app, path: '/graphql' });
 
-// Define the GraphQL endpoint
-app.use(
-  '/graphql',
-  graphqlHTTP({
-    schema: schema,
-    rootValue: root,
-    graphiql: true,
+      // Start the Express server
+      app.listen({ port: 4000 }, () => {
+        console.log('Server ready at http://localhost:4000/graphql');
+      });
+    });
   })
-);
-
-// Start the server
-app.listen(4000, () => console.log('Server is running on http://localhost:4000/graphql'));
+  .catch(error => {
+    console.error('Database connection error:', error);
+  });
