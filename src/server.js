@@ -64,12 +64,18 @@ const resolvers = {
   },
 };
 
-// Connect to MongoDB
+// Create the Apollo Server instance
+const server = new ApolloServer({
+  typeDefs,
+  resolvers,
+  introspection: true,
+  playground: true,
+});
+
+// Connect to MongoDB and start the server
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
     console.log('Database connected');
-    // Create the Apollo Server
-    const server = new ApolloServer({ typeDefs, resolvers });
 
     // Apply the Apollo GraphQL middleware and set the path to /graphql
     server.start().then(() => {

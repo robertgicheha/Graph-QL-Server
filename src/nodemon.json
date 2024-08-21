@@ -1,0 +1,5 @@
+{
+  "watch": ["src", "functions"],
+  "ext": "js",
+  "ignore": []
+}
